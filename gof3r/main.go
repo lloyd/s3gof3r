@@ -35,6 +35,7 @@ import (
 	"io"
 	"os"
 	"runtime"
+	"runtime/pprof"
 	"time"
 
 	"github.com/jessevdk/go-flags"
@@ -56,6 +57,8 @@ func main() {
 	if err := parseIni(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
+
+	runtime.SetBlockProfileRate(1)
 
 	// parser calls the Execute function for the command after parsing the command line options.
 	if _, err := parser.Parse(); err != nil {
@@ -82,6 +85,13 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Fprintf(os.Stderr, "duration: %v\n", time.Since(start))
+	f, err := os.Create("./whyblock.txt")
+	if err != nil {
+		fmt.Printf("error writing blocking profile: %s\n", err)
+		os.Exit(1)
+	}
+	defer f.Close()
+	pprof.Lookup("block").WriteTo(f, 1)
 }
 
 // getAWSKeys gets the AWS Keys from environment variables or the instance-based metadata on EC2
